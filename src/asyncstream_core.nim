@@ -5,7 +5,7 @@
 ## `AsyncReadStream` and `AsyncWriteStream` are designed to support real-world conditions, such as differences in read and write speeds and cases where internal buffers are filled and need to be waited on before writing again. 
 ## 
 
-import std/[asyncfutures, options, macros]
+import std/[asyncfutures, options]
 
 type ReadResultKind* {.pure.} = enum
   Data
