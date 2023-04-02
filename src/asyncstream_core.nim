@@ -47,24 +47,6 @@ type ReadResult*[T] = object
     exception*: Exception
       ## The exception that caused the read error
 
-type PipeResultKind* {.pure.} = enum
-  Finished
-    ## The read stream's data successfully finished being piped to the write stream
-  
-  Error
-    ## An error occurred while piping the read stream's data to the write stream
-
-type PipeResult* = object
-  case kind*: PipeResultKind
-    ## The result kind
-  
-  of PipeResultKind.Finished:
-    ## The pipe operation is finished; no additional properties
-  
-  of PipeResultKind.Error:
-    exception*: Exception
-      ## The exception that caused the read or write error
-
 type WriteResultKind* {.pure.} = enum
   Written
     ## The data was written to the stream (or its internal queue) successfully
