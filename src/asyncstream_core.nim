@@ -4,8 +4,21 @@
 ## 
 ## `AsyncReadStream` and `AsyncWriteStream` are designed to support real-world conditions, such as differences in read and write speeds and cases where internal buffers are filled and need to be waited on before writing again. 
 ## 
+## To force the compiler to 
 
 import std/[asyncfutures, options]
+
+template implements*(typeA: typedesc, typeB: typedesc) =
+  ## Convenience template to check if a type implements another type by causing a fatal error.
+  ## You can put it after your type definition to ensure that your type implements another.
+  ## 
+  ## Example:
+  ## ```
+  ## MyAsyncReadStream.implements(AsyncReadStream[string])
+  ## ```
+
+  when typeA isnot typeB:
+    {.fatal: $typeA & " does not implement " & $typeB.}
 
 type ReadResultKind* {.pure.} = enum
   Data
@@ -121,10 +134,10 @@ type HasMutableMaxQueueLen* = concept
 ## Write streams that are backed by a queue and want to expose queue-related APIs to users should also implement QueuedStream.
 type AsyncWriteStream*[T] = concept
   
-  proc write(this: Self, item: T): owned(Future[WriteResult])
+  proc write(this: Self, item: sink T): Future[WriteResult]
     ## Writes a single item to the stream
 
-  proc write(this: Self, items: seq[T]): owned(Future[WriteResult])
+  proc write(this: Self, items: sink seq[T]): Future[WriteResult]
     ## Writes multiple items to the stream.
     ## An error response should be returned as soon as the write operation fails.
     ## Additionally, if the number of items currently in the queue exceeds the maximum number of queue items, a Full result should be returned instead of writing any items.
@@ -134,20 +147,20 @@ type AsyncWriteStream*[T] = concept
     ## The "write" proc is called with 3 items.
     ## No items are written, and a Full result is returned because there are not enough free slots in the queue to write all the items in the write call.
   
-  proc complete(this: Self): owned(Future[CompleteResult])
+  proc complete(this: Self): Future[CompleteResult]
     ## Completes the write stream and marks it as finished.
     ## Additional work such as closing a file descriptor or other cleanup work may be done as well.
     ## 
     ## If an Error response is returned, the stream's completion status will be dubious; you should check if it is marked as finished manually.
   
-  proc complete[T](this: Self, item: T): owned(Future[WriteResult])
+  proc complete[T](this: Self, item: sink T): Future[WriteResult]
     ## Writes a single item to the stream, completes the stream, then marks it as finished.
     ## Additional work such as closing a file descriptor or other cleanup work may be done as well.
     ## A Written result will be returned once the item is written and the stream is finished.
     ## 
     ## If an Error response is returned, the stream's completion status will be dubious; you should check if it is marked as finished manually.
   
-  proc complete[T](this: Self, items: seq[T]): owned(Future[WriteResult])
+  proc complete[T](this: Self, items: sink seq[T]): Future[WriteResult]
     ## Writes multiple items to the stream, completes the stream, then marks it as finished.
     ## Additional work such as closing a file descriptor or other cleanup work may be done as well.
     ## A Written result will be returned once the items are written and the stream is finished.
@@ -178,11 +191,11 @@ type AsyncWriteStream*[T] = concept
 ## Read streams that are backed by a queue and want to expose queue-related APIs to users should also implement QueuedStream.
 type AsyncReadStream*[T] = concept
 
-  proc read(this: Self): owned(Future[ReadResult[T]])
+  proc read(this: Self): Future[ReadResult[T]]
     ## Reads a single item.
 
-  proc read(this:Self, count: int): owned(Future[ReadResult[seq[T]]])
-    ## Read multiple items.
+  proc read(this: Self, count: int): Future[ReadResult[seq[T]]]
+    ## Reads multiple items.
     ## This proc should never return more items than requested, but may return less.
     ## It should only return 0 items if count < 1, otherwise it should always return at least one.
     ## 
@@ -192,12 +205,12 @@ type AsyncReadStream*[T] = concept
     ## This proc should not raise any exceptions.
     ## If the stream cannot be read due to an error, return an Error result.
 
-  proc readAll(this: Self): owned(Future[ReadResult[seq[T]]])
+  proc readAll(this: Self): Future[ReadResult[seq[T]]]
     ## Reads the entire stream to a seq and returns it.
     ## Using this proc may not be desirable if the stream size is unknown or is expected to be very large.
     ## It behaves like read in terms of its return value.
 
-  proc pipeTo(this: Self, writeStream: AsyncWriteStream[T]): owned(Future[PipeResult])
+  proc pipeTo(this: Self, writeStream: AsyncWriteStream[T]): Future[PipeResult]
     ## Pipes the stream's data to a AsyncWriteStream entirely.
     ## If piping fails, returns an Error result.
     ## Otherwise, waits until all data is piped to the write stream and then returns a Finished result. 
