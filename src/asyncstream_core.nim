@@ -210,11 +210,6 @@ type AsyncReadStream*[T] = concept
     ## Using this proc may not be desirable if the stream size is unknown or is expected to be very large.
     ## It behaves like read in terms of its return value.
 
-  proc pipeTo(this: Self, writeStream: AsyncWriteStream[T]): Future[PipeResult]
-    ## Pipes the stream's data to a AsyncWriteStream entirely.
-    ## If piping fails, returns an Error result.
-    ## Otherwise, waits until all data is piped to the write stream and then returns a Finished result. 
-
   func isFinished(this: Self): bool
     ## Whether the stream is finished.
     ## Must be true if isFailed is also true.
